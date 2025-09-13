@@ -1,12 +1,31 @@
 use anyhow::{Context, Result};
 use colored::*;
-use rustyline::{error::ReadlineError, DefaultEditor};
+use rustyline::history::DefaultHistory;
+use rustyline::{error::ReadlineError, Editor};
+use std::env;
+use std::path::PathBuf;
 
 use crate::client::FalkorCli;
+use crate::completion::SimpleCompleter;
 
 impl FalkorCli {
     pub fn interactive_mode(&mut self) -> Result<()> {
-        let mut rl = DefaultEditor::new().context("Failed to create readline editor")?;
+        let mut rl: Editor<SimpleCompleter, DefaultHistory> =
+            Editor::new().context("Failed to create readline editor")?;
+        rl.set_helper(Some(SimpleCompleter::new()));
+
+        // Determine history file path (~/.falkordb-cli_history)
+        let history_path: PathBuf = if let Ok(home) = env::var("HOME") {
+            PathBuf::from(home).join(".falkordb-cli_history")
+        } else if let Ok(up) = env::var("USERPROFILE") {
+            PathBuf::from(up).join(".falkordb-cli_history")
+        } else {
+            PathBuf::from(".falkordb-cli_history")
+        };
+        let history_path_str = history_path.to_str().unwrap_or(".falkordb-cli_history");
+
+        // Try to load history if present (best-effort)
+        let _ = rl.load_history(history_path_str);
 
         println!("{}", "FalkorDB CLI - Interactive Mode".green().bold());
         println!("Type 'help' for commands, 'exit' to quit");
@@ -47,6 +66,11 @@ impl FalkorCli {
                     break;
                 }
             }
+        }
+
+        // Save history on exit (best-effort)
+        if let Err(e) = rl.save_history(history_path_str) {
+            eprintln!("Failed to save history '{}': {:?}", history_path_str, e);
         }
 
         Ok(())
