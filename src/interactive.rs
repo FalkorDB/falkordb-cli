@@ -110,6 +110,52 @@ impl FalkorCli {
                 self.show_schema(&graph_name)
             }
             Some("EXIT") | Some("QUIT") => Ok(()),
+            Some("QUERY") => {
+                // Extract the query text after the leading 'QUERY' token (split on any whitespace)
+                let raw = line.splitn(2, |c: char| c.is_whitespace()).nth(1).map(|s| s.trim()).unwrap_or("");
+                // Strip matching surrounding quotes if present
+                let query_text = if (raw.starts_with('"') && raw.ends_with('"')) || (raw.starts_with('\'') && raw.ends_with('\'')) {
+                    &raw[1..raw.len() - 1]
+                } else {
+                    raw
+                };
+
+                if query_text.trim().is_empty() {
+                    println!("Usage: QUERY <cypher_query>");
+                    return Ok(());
+                }
+
+                if let Some(ref graph_name) = self.current_graph.clone() {
+                    self.execute_query(graph_name, query_text.trim(), false)
+                } else {
+                    Err(anyhow::anyhow!(
+                        "No graph selected. Use 'USE <graph_name>' first or specify graph name"
+                    ))
+                }
+            }
+            Some("RO-QUERY") => {
+                // Extract the query text after the leading 'RO-QUERY' token (split on any whitespace)
+                let raw = line.splitn(2, |c: char| c.is_whitespace()).nth(1).map(|s| s.trim()).unwrap_or("");
+                // Strip matching surrounding quotes if present
+                let query_text = if (raw.starts_with('"') && raw.ends_with('"')) || (raw.starts_with('\'') && raw.ends_with('\'')) {
+                    &raw[1..raw.len() - 1]
+                } else {
+                    raw
+                };
+
+                if query_text.trim().is_empty() {
+                    println!("Usage: RO-QUERY <cypher_query>");
+                    return Ok(());
+                }
+
+                if let Some(ref graph_name) = self.current_graph.clone() {
+                    self.execute_query(graph_name, query_text.trim(), true)
+                } else {
+                    Err(anyhow::anyhow!(
+                        "No graph selected. Use 'USE <graph_name>' first or specify graph name"
+                    ))
+                }
+            }
             _ => {
                 // Treat as Cypher query if we have a current graph
                 if let Some(ref graph_name) = self.current_graph.clone() {
