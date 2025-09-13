@@ -55,7 +55,7 @@ impl Completer for SimpleCompleter {
         pos: usize,
         _ctx: &Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Pair>)> {
-        let start = line[..pos].rfind(' ').map(|i| i + 1).unwrap_or(0);
+        let start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
         let prefix = &line[start..pos].to_uppercase();
 
         let matches: Vec<Pair> = self

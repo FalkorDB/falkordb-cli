@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-/// FalkorDB Command Line Interface
+/// `FalkorDB` Command Line Interface
 #[derive(Parser)]
 #[command(
     name = "falkordb-cli",
@@ -9,11 +9,11 @@ use clap::{Parser, Subcommand};
     long_about = "A Redis-cli like interface for FalkorDB graph database operations"
 )]
 pub struct Cli {
-    /// FalkorDB server hostname
+    /// `FalkorDB` server hostname
     #[arg(long, default_value = "localhost")]
     pub hostname: String,
 
-    /// FalkorDB server port
+    /// `FalkorDB` server port
     #[arg(short = 'p', long, default_value = "6379")]
     pub port: u16,
 

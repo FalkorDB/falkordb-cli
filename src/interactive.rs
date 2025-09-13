@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use colored::*;
+use colored::Colorize;
 use rustyline::history::DefaultHistory;
 use rustyline::{error::ReadlineError, Editor};
 use std::env;
@@ -15,13 +15,15 @@ impl FalkorCli {
         rl.set_helper(Some(SimpleCompleter::new()));
 
         // Determine history file path (~/.falkordb-cli_history)
-        let history_path: PathBuf = if let Ok(home) = env::var("HOME") {
-            PathBuf::from(home).join(".falkordb-cli_history")
-        } else if let Ok(up) = env::var("USERPROFILE") {
-            PathBuf::from(up).join(".falkordb-cli_history")
-        } else {
-            PathBuf::from(".falkordb-cli_history")
-        };
+        let history_path: PathBuf = env::var("HOME").map_or_else(
+            |_| {
+                env::var("USERPROFILE").map_or_else(
+                    |_| PathBuf::from(".falkordb-cli_history"),
+                    |up| PathBuf::from(up).join(".falkordb-cli_history"),
+                )
+            },
+            |home| PathBuf::from(home).join(".falkordb-cli_history"),
+        );
         let history_path_str = history_path.to_str().unwrap_or(".falkordb-cli_history");
 
         // Try to load history if present (best-effort)
@@ -35,10 +37,10 @@ impl FalkorCli {
         }
 
         loop {
-            let prompt = match &self.current_graph {
-                Some(graph) => format!("{}> ", graph),
-                None => "falkordb> ".to_string(),
-            };
+            let prompt = self.current_graph.as_ref().map_or_else(
+                || "falkordb> ".to_string(),
+                |graph| format!("{}> ", graph.yellow())
+            );
 
             let readline = rl.readline(&prompt);
             match readline {
@@ -62,7 +64,7 @@ impl FalkorCli {
                     break;
                 }
                 Err(err) => {
-                    eprintln!("Error: {:?}", err);
+                    eprintln!("Error: {err:?}");
                     break;
                 }
             }
@@ -70,7 +72,7 @@ impl FalkorCli {
 
         // Save history on exit (best-effort)
         if let Err(e) = rl.save_history(history_path_str) {
-            eprintln!("Failed to save history '{}': {:?}", history_path_str, e);
+            eprintln!("Failed to save history '{history_path_str}': {e:?}");
         }
 
         Ok(())
@@ -88,33 +90,37 @@ impl FalkorCli {
 
         match parts.first().map(|s| s.to_uppercase()).as_deref() {
             Some("HELP") => {
-                self.show_help();
+                Self::show_help();
                 Ok(())
             }
             Some("USE") => {
                 if let Some(graph_name) = parts.get(1) {
-                    self.set_graph(graph_name.to_string());
+                    self.set_graph((*graph_name).to_string());
                     println!("Switched to graph: {}", graph_name.yellow());
                 } else {
                     println!("Usage: USE <graph_name>");
                 }
                 Ok(())
             }
-            Some("LIST") => self.list_graphs(),
+            Some("LIST") => Self::list_graphs(),
             Some("SCHEMA") => {
                 let graph_name = if let Some(name) = parts.get(1) {
-                    name.to_string()
+                    (*name).to_string()
                 } else {
                     self.get_graph_name(None)?
                 };
                 self.show_schema(&graph_name)
             }
-            Some("EXIT") | Some("QUIT") => Ok(()),
+            Some("EXIT" | "QUIT") => Ok(()),
             Some("QUERY") => {
                 // Extract the query text after the leading 'QUERY' token (split on any whitespace)
-                let raw = line.splitn(2, |c: char| c.is_whitespace()).nth(1).map(|s| s.trim()).unwrap_or("");
+                let raw = line
+                    .split_once(|c: char| c.is_whitespace())
+                    .map_or("", |(_, s)| s.trim());
                 // Strip matching surrounding quotes if present
-                let query_text = if (raw.starts_with('"') && raw.ends_with('"')) || (raw.starts_with('\'') && raw.ends_with('\'')) {
+                let query_text = if (raw.starts_with('"') && raw.ends_with('"'))
+                    || (raw.starts_with('\'') && raw.ends_with('\''))
+                {
                     &raw[1..raw.len() - 1]
                 } else {
                     raw
@@ -125,19 +131,22 @@ impl FalkorCli {
                     return Ok(());
                 }
 
-                if let Some(ref graph_name) = self.current_graph.clone() {
-                    self.execute_query(graph_name, query_text.trim(), false)
-                } else {
-                    Err(anyhow::anyhow!(
+                self.current_graph.clone().as_ref().map_or_else(
+                    || Err(anyhow::anyhow!(
                         "No graph selected. Use 'USE <graph_name>' first or specify graph name"
-                    ))
-                }
+                    )),
+                    |graph_name| self.execute_query(graph_name, query_text.trim(), false)
+                )
             }
             Some("RO-QUERY") => {
                 // Extract the query text after the leading 'RO-QUERY' token (split on any whitespace)
-                let raw = line.splitn(2, |c: char| c.is_whitespace()).nth(1).map(|s| s.trim()).unwrap_or("");
+                let raw = line
+                    .split_once(|c: char| c.is_whitespace())
+                    .map_or("", |(_, s)| s.trim());
                 // Strip matching surrounding quotes if present
-                let query_text = if (raw.starts_with('"') && raw.ends_with('"')) || (raw.starts_with('\'') && raw.ends_with('\'')) {
+                let query_text = if (raw.starts_with('"') && raw.ends_with('"'))
+                    || (raw.starts_with('\'') && raw.ends_with('\''))
+                {
                     &raw[1..raw.len() - 1]
                 } else {
                     raw
@@ -148,28 +157,26 @@ impl FalkorCli {
                     return Ok(());
                 }
 
-                if let Some(ref graph_name) = self.current_graph.clone() {
-                    self.execute_query(graph_name, query_text.trim(), true)
-                } else {
-                    Err(anyhow::anyhow!(
+                self.current_graph.clone().as_ref().map_or_else(
+                    || Err(anyhow::anyhow!(
                         "No graph selected. Use 'USE <graph_name>' first or specify graph name"
-                    ))
-                }
+                    )),
+                    |graph_name| self.execute_query(graph_name, query_text.trim(), true)
+                )
             }
             _ => {
                 // Treat as Cypher query if we have a current graph
-                if let Some(ref graph_name) = self.current_graph.clone() {
-                    self.execute_query(graph_name, line, false)
-                } else {
-                    Err(anyhow::anyhow!(
+                self.current_graph.clone().as_ref().map_or_else(
+                    || Err(anyhow::anyhow!(
                         "No graph selected. Use 'USE <graph_name>' first or specify graph name"
-                    ))
-                }
+                    )),
+                    |graph_name| self.execute_query(graph_name, line, false)
+                )
             }
         }
     }
 
-    fn show_help(&self) {
+    fn show_help() {
         println!("{}", "FalkorDB CLI Commands:".green().bold());
         println!(
             "  {}            - Execute Cypher query on current graph",

@@ -1,10 +1,11 @@
 use anyhow::Result;
-use colored::*;
+use colored::Colorize;
 
 use crate::cli::Commands;
 use crate::client::FalkorCli;
 
 impl FalkorCli {
+    #[allow(clippy::too_many_lines)]
     pub fn handle_command(&mut self, command: Commands) -> Result<()> {
         match command {
             Commands::Query {
@@ -22,7 +23,7 @@ impl FalkorCli {
                 match graph_client.profile(&query).execute() {
                     Ok(plan) => {
                         println!("{}", "Execution Plan:".cyan().bold());
-                        println!("{:?}", plan);
+                        println!("{plan:?}");
                         Ok(())
                     }
                     Err(e) => Err(anyhow::anyhow!("Profile failed: {}", e)),
@@ -33,7 +34,7 @@ impl FalkorCli {
                 match graph_client.explain(&query).execute() {
                     Ok(plan) => {
                         println!("{}", "Query Explanation:".cyan().bold());
-                        println!("{:?}", plan);
+                        println!("{plan:?}");
                         Ok(())
                     }
                     Err(e) => Err(anyhow::anyhow!("Explain failed: {}", e)),
@@ -42,14 +43,14 @@ impl FalkorCli {
             Commands::Delete { graph } => {
                 let mut graph_client = self.client.select_graph(&graph);
                 match graph_client.delete() {
-                    Ok(_) => {
-                        println!("Graph '{}' deleted successfully", graph);
+                    Ok(()) => {
+                        println!("Graph '{graph}' deleted successfully");
                         Ok(())
                     }
                     Err(e) => Err(anyhow::anyhow!("Delete failed: {}", e)),
                 }
             }
-            Commands::List => self.list_graphs(),
+            Commands::List => Self::list_graphs(),
             Commands::Schema { graph } => self.show_schema(&graph),
             Commands::Slowlog { graph } => {
                 let graph_client = self.client.select_graph(&graph);
@@ -80,7 +81,7 @@ impl FalkorCli {
                     Ok(indices) => {
                         println!("{}", "Indices:".cyan().bold());
                         for index in &indices.data {
-                            println!("  {:?}", index);
+                            println!("  {index:?}");
                         }
                         Ok(())
                     }
@@ -110,8 +111,7 @@ impl FalkorCli {
                 ) {
                     Ok(_) => {
                         println!(
-                            "Index created successfully on {}:{} for {}",
-                            entity_type, label, property
+                            "Index created successfully on {entity_type}:{label} for {property}"
                         );
                         Ok(())
                     }
@@ -140,8 +140,7 @@ impl FalkorCli {
                 ) {
                     Ok(_) => {
                         println!(
-                            "Index dropped successfully on {}:{} for {}",
-                            entity_type, label, property
+                            "Index dropped successfully on {entity_type}:{label} for {property}"
                         );
                         Ok(())
                     }
@@ -155,11 +154,10 @@ impl FalkorCli {
             } => {
                 // This would need proper parameter parsing for procedure calls
                 println!("Procedure calls not fully implemented yet");
-                println!("Procedure: {}", procedure);
-                println!("Graph: {}", graph);
+                println!("Procedure: {procedure}");
+                println!("Graph: {graph}");
                 println!(
-                    "Use: graph.call_procedure(\"{}\").execute() in the Rust API",
-                    procedure
+                    "Use: graph.call_procedure(\"{procedure}\").execute() in the Rust API"
                 );
                 Ok(())
             }
