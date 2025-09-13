@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use colored::*;
 use falkordb::{FalkorClientBuilder, FalkorConnectionInfo, FalkorSyncClient};
-use serde_json;
 
 pub struct FalkorCli {
     pub client: FalkorSyncClient,
@@ -59,7 +58,7 @@ impl FalkorCli {
 
     pub fn execute_query(&mut self, graph_name: &str, query: &str, readonly: bool) -> Result<()> {
         let mut graph = self.client.select_graph(graph_name);
-        
+
         let result = if readonly {
             graph.ro_query(query).execute()
         } else {
@@ -77,9 +76,15 @@ impl FalkorCli {
         }
     }
 
-    fn display_query_result(&self, result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
+    fn display_query_result(
+        &self,
+        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
+    ) -> Result<()> {
         if self.raw {
-            println!("Raw result: headers={:?}, stats={:?}", result.header, result.stats);
+            println!(
+                "Raw result: headers={:?}, stats={:?}",
+                result.header, result.stats
+            );
             return Ok(());
         }
 
@@ -90,15 +95,33 @@ impl FalkorCli {
         }
     }
 
-    fn display_as_table(&self, result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
+    fn display_as_table(
+        &self,
+        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
+    ) -> Result<()> {
         // Display statistics
         if !self.quiet {
             println!("{}", "Statistics:".cyan().bold());
-            println!("  Nodes created: {}", result.get_nodes_created().unwrap_or(0));
-            println!("  Nodes deleted: {}", result.get_nodes_deleted().unwrap_or(0));
-            println!("  Relationships created: {}", result.get_relationship_created().unwrap_or(0));
-            println!("  Relationships deleted: {}", result.get_relationship_deleted().unwrap_or(0));
-            println!("  Properties set: {}", result.get_properties_set().unwrap_or(0));
+            println!(
+                "  Nodes created: {}",
+                result.get_nodes_created().unwrap_or(0)
+            );
+            println!(
+                "  Nodes deleted: {}",
+                result.get_nodes_deleted().unwrap_or(0)
+            );
+            println!(
+                "  Relationships created: {}",
+                result.get_relationship_created().unwrap_or(0)
+            );
+            println!(
+                "  Relationships deleted: {}",
+                result.get_relationship_deleted().unwrap_or(0)
+            );
+            println!(
+                "  Properties set: {}",
+                result.get_properties_set().unwrap_or(0)
+            );
             if let Some(time) = result.get_internal_execution_time() {
                 println!("  Query internal execution time: {:.3} milliseconds", time);
             }
@@ -124,29 +147,41 @@ impl FalkorCli {
 
             // Note: We can't iterate over the LazyResultSet because it requires mutable access
             // This is a limitation of the current implementation
-            println!("| {:15} |", "Data available but iteration requires mutable access");
+            println!(
+                "| {:15} |",
+                "Data available but iteration requires mutable access"
+            );
         }
 
         Ok(())
     }
 
-    fn display_as_json(&self, result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
-        println!("{}", serde_json::to_string_pretty(&serde_json::json!({
-            "statistics": {
-                "nodes_created": result.get_nodes_created().unwrap_or(0),
-                "nodes_deleted": result.get_nodes_deleted().unwrap_or(0),
-                "relationships_created": result.get_relationship_created().unwrap_or(0),
-                "relationships_deleted": result.get_relationship_deleted().unwrap_or(0),
-                "properties_set": result.get_properties_set().unwrap_or(0),
-                "query_time": result.get_internal_execution_time().unwrap_or(0.0),
-            },
-            "headers": result.header,
-            "data": "Result data serialization would be implemented here"
-        }))?);
+    fn display_as_json(
+        &self,
+        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
+    ) -> Result<()> {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "statistics": {
+                    "nodes_created": result.get_nodes_created().unwrap_or(0),
+                    "nodes_deleted": result.get_nodes_deleted().unwrap_or(0),
+                    "relationships_created": result.get_relationship_created().unwrap_or(0),
+                    "relationships_deleted": result.get_relationship_deleted().unwrap_or(0),
+                    "properties_set": result.get_properties_set().unwrap_or(0),
+                    "query_time": result.get_internal_execution_time().unwrap_or(0.0),
+                },
+                "headers": result.header,
+                "data": "Result data serialization would be implemented here"
+            }))?
+        );
         Ok(())
     }
 
-    fn display_as_csv(&self, result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
+    fn display_as_csv(
+        &self,
+        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
+    ) -> Result<()> {
         let headers = &result.header;
         if !headers.is_empty() {
             // Print headers
@@ -169,10 +204,10 @@ impl FalkorCli {
     pub fn show_schema(&mut self, graph_name: &str) -> Result<()> {
         // Schema inspection would need to be done via queries since the schema methods are not public
         println!("{}", "Graph Schema:".cyan().bold());
-        
+
         // Execute a query to get node labels
         let mut graph = self.client.select_graph(graph_name);
-        
+
         // Query for node labels
         match graph.query("CALL db.labels()").execute() {
             Ok(_result) => {
@@ -184,7 +219,7 @@ impl FalkorCli {
                 println!("    Unable to retrieve node labels");
             }
         }
-        
+
         // Query for relationship types
         match graph.query("CALL db.relationshipTypes()").execute() {
             Ok(_result) => {
@@ -196,7 +231,7 @@ impl FalkorCli {
                 println!("    Unable to retrieve relationship types");
             }
         }
-        
+
         Ok(())
     }
 }

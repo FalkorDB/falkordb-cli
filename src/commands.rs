@@ -1,6 +1,5 @@
 use anyhow::Result;
 use colored::*;
-use falkordb;
 
 use crate::cli::Commands;
 use crate::client::FalkorCli;
@@ -8,12 +7,16 @@ use crate::client::FalkorCli;
 impl FalkorCli {
     pub fn handle_command(&mut self, command: Commands) -> Result<()> {
         match command {
-            Commands::Query { graph, query, params: _ } => {
-                self.execute_query(&graph, &query, false)
-            }
-            Commands::RoQuery { graph, query, params: _ } => {
-                self.execute_query(&graph, &query, true)
-            }
+            Commands::Query {
+                graph,
+                query,
+                params: _,
+            } => self.execute_query(&graph, &query, false),
+            Commands::RoQuery {
+                graph,
+                query,
+                params: _,
+            } => self.execute_query(&graph, &query, true),
             Commands::Profile { graph, query } => {
                 let mut graph_client = self.client.select_graph(&graph);
                 match graph_client.profile(&query).execute() {
@@ -84,51 +87,83 @@ impl FalkorCli {
                     Err(e) => Err(anyhow::anyhow!("Indices query failed: {}", e)),
                 }
             }
-            Commands::CreateIndex { graph, entity_type, label, property } => {
+            Commands::CreateIndex {
+                graph,
+                entity_type,
+                label,
+                property,
+            } => {
                 let mut graph_client = self.client.select_graph(&graph);
                 let entity = match entity_type.to_uppercase().as_str() {
                     "NODE" => falkordb::EntityType::Node,
                     "EDGE" | "RELATIONSHIP" => falkordb::EntityType::Edge,
                     _ => return Err(anyhow::anyhow!("Invalid entity type. Use NODE or EDGE")),
                 };
-                
+
                 // Use Range index as default, the API requires IndexType, EntityType, label, properties, options
-                match graph_client.create_index(falkordb::IndexType::Range, entity, &label, &[&property], None) {
+                match graph_client.create_index(
+                    falkordb::IndexType::Range,
+                    entity,
+                    &label,
+                    &[&property],
+                    None,
+                ) {
                     Ok(_) => {
-                        println!("Index created successfully on {}:{} for {}", entity_type, label, property);
+                        println!(
+                            "Index created successfully on {}:{} for {}",
+                            entity_type, label, property
+                        );
                         Ok(())
                     }
                     Err(e) => Err(anyhow::anyhow!("Index creation failed: {}", e)),
                 }
             }
-            Commands::DropIndex { graph, entity_type, label, property } => {
+            Commands::DropIndex {
+                graph,
+                entity_type,
+                label,
+                property,
+            } => {
                 let mut graph_client = self.client.select_graph(&graph);
                 let entity = match entity_type.to_uppercase().as_str() {
                     "NODE" => falkordb::EntityType::Node,
                     "EDGE" | "RELATIONSHIP" => falkordb::EntityType::Edge,
                     _ => return Err(anyhow::anyhow!("Invalid entity type. Use NODE or EDGE")),
                 };
-                
+
                 // Use Range index as default, the API requires IndexType, EntityType, label, properties
-                match graph_client.drop_index(falkordb::IndexType::Range, entity, &label, &[&property]) {
+                match graph_client.drop_index(
+                    falkordb::IndexType::Range,
+                    entity,
+                    &label,
+                    &[&property],
+                ) {
                     Ok(_) => {
-                        println!("Index dropped successfully on {}:{} for {}", entity_type, label, property);
+                        println!(
+                            "Index dropped successfully on {}:{} for {}",
+                            entity_type, label, property
+                        );
                         Ok(())
                     }
                     Err(e) => Err(anyhow::anyhow!("Index drop failed: {}", e)),
                 }
             }
-            Commands::Call { graph, procedure, args: _ } => {
+            Commands::Call {
+                graph,
+                procedure,
+                args: _,
+            } => {
                 // This would need proper parameter parsing for procedure calls
                 println!("Procedure calls not fully implemented yet");
                 println!("Procedure: {}", procedure);
                 println!("Graph: {}", graph);
-                println!("Use: graph.call_procedure(\"{}\").execute() in the Rust API", procedure);
+                println!(
+                    "Use: graph.call_procedure(\"{}\").execute() in the Rust API",
+                    procedure
+                );
                 Ok(())
             }
-            Commands::Interactive => {
-                self.interactive_mode()
-            }
+            Commands::Interactive => self.interactive_mode(),
         }
     }
 }
