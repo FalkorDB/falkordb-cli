@@ -1,0 +1,30 @@
+name: Release with goreleaser
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  goreleaser:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/gh-action-rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install goreleaser
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          version: latest
+
+      - name: Run goreleaser
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          goreleaser release --rm-dist
