@@ -1,4 +1,4 @@
-format: 2
+version: 2
 project_name: falkordb-cli
 
 before:
