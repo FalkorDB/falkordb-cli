@@ -18,13 +18,10 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Install goreleaser
-        uses: goreleaser/goreleaser-action@v3
+      - name: Run goreleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
-
-      - name: Run goreleaser
+          args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          goreleaser release --rm-dist
