@@ -8,17 +8,19 @@ before:
     - rustup target add x86_64-unknown-linux-musl || true
     - cargo build --release --target x86_64-unknown-linux-gnu || true
     - cargo build --release --target x86_64-unknown-linux-musl || true
+builds:
+  - skip: true
 archives:
   - id: unix
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - "target/*/release/falkordb-cli"
-    format: tar.gz
+    formats: [ 'tar.gz' ]
   - id: windows
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - "target/*/release/falkordb-cli.exe"
-    format: zip
+    formats: [ 'zip' ]
 release:
   github:
     owner: FalkorDB
