@@ -1,6 +1,14 @@
 use anyhow::{Context, Result};
-use colored::*;
+use colored::Colorize;
 use falkordb::{FalkorClientBuilder, FalkorConnectionInfo, FalkorSyncClient};
+
+pub struct ConnectionConfig<'a> {
+    pub hostname: &'a str,
+    pub port: u16,
+    pub database: u8,
+    pub username: Option<&'a str>,
+    pub auth: Option<&'a str>,
+}
 
 pub struct FalkorCli {
     pub client: FalkorSyncClient,
@@ -12,18 +20,28 @@ pub struct FalkorCli {
 
 impl FalkorCli {
     pub fn new(
-        hostname: &str,
-        port: u16,
-        database: u8,
-        auth: Option<&str>,
+        config: &ConnectionConfig<'_>,
         format: String,
         quiet: bool,
         raw: bool,
     ) -> Result<Self> {
-        let connection_string = if let Some(password) = auth {
-            format!("redis://:{password}@{hostname}:{port}/{database}")
-        } else {
-            format!("redis://{hostname}:{port}/{database}")
+        let connection_string = match (config.username, config.auth) {
+            (Some(user), Some(pass)) => format!(
+                "redis://{user}:{pass}@{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
+            (None, Some(pass)) => format!(
+                "redis://:{pass}@{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
+            (Some(user), None) => format!(
+                "redis://{user}@{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
+            (None, None) => format!(
+                "redis://{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
         };
 
         let connection_info = FalkorConnectionInfo::try_from(connection_string)
@@ -48,15 +66,17 @@ impl FalkorCli {
     }
 
     pub fn get_graph_name(&self, provided: Option<&str>) -> Result<String> {
-        match provided {
-            Some(name) => Ok(name.to_string()),
-            None => self.current_graph.clone().ok_or_else(|| {
-                anyhow::anyhow!("No graph specified. Use -g option or 'USE graph_name' command")
-            }),
-        }
+        provided.map_or_else(
+            || {
+                self.current_graph.clone().ok_or_else(|| {
+                    anyhow::anyhow!("No graph specified. Use -g option or 'USE graph_name' command")
+                })
+            },
+            |name| Ok(name.to_string()),
+        )
     }
 
-    pub fn execute_query(&mut self, graph_name: &str, query: &str, readonly: bool) -> Result<()> {
+    pub fn execute_query(&self, graph_name: &str, query: &str, readonly: bool) -> Result<()> {
         let mut graph = self.client.select_graph(graph_name);
 
         let result = if readonly {
@@ -89,12 +109,13 @@ impl FalkorCli {
         }
 
         match self.format.as_str() {
-            "json" => self.display_as_json(result),
-            "csv" => self.display_as_csv(result),
+            "json" => Self::display_as_json(result),
+            "csv" => Self::display_as_csv(result),
             _ => self.display_as_table(result),
         }
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     fn display_as_table(
         &self,
         result: &falkordb::QueryResult<falkordb::LazyResultSet>,
@@ -123,7 +144,7 @@ impl FalkorCli {
                 result.get_properties_set().unwrap_or(0)
             );
             if let Some(time) = result.get_internal_execution_time() {
-                println!("  Query internal execution time: {:.3} milliseconds", time);
+                println!("  Query internal execution time: {time:.3} milliseconds");
             }
             println!();
         }
@@ -156,10 +177,7 @@ impl FalkorCli {
         Ok(())
     }
 
-    fn display_as_json(
-        &self,
-        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
-    ) -> Result<()> {
+    fn display_as_json(result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
         println!(
             "{}",
             serde_json::to_string_pretty(&serde_json::json!({
@@ -178,10 +196,8 @@ impl FalkorCli {
         Ok(())
     }
 
-    fn display_as_csv(
-        &self,
-        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
-    ) -> Result<()> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn display_as_csv(result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
         let headers = &result.header;
         if !headers.is_empty() {
             // Print headers
@@ -193,7 +209,8 @@ impl FalkorCli {
         Ok(())
     }
 
-    pub fn list_graphs(&mut self) -> Result<()> {
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn list_graphs() -> Result<()> {
         // This would need to be implemented based on FalkorDB's graph listing capability
         // For now, we'll use a Redis command to list keys
         println!("Graph listing not directly supported in current falkordb-rs version");
@@ -201,7 +218,8 @@ impl FalkorCli {
         Ok(())
     }
 
-    pub fn show_schema(&mut self, graph_name: &str) -> Result<()> {
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn show_schema(&self, graph_name: &str) -> Result<()> {
         // Schema inspection would need to be done via queries since the schema methods are not public
         println!("{}", "Graph Schema:".cyan().bold());
 
