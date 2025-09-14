@@ -26,10 +26,22 @@ impl FalkorCli {
         raw: bool,
     ) -> Result<Self> {
         let connection_string = match (config.username, config.auth) {
-            (Some(user), Some(pass)) => format!("redis://{user}:{pass}@{}:{}/{}", config.hostname, config.port, config.database),
-            (None, Some(pass)) => format!("redis://:{pass}@{}:{}/{}", config.hostname, config.port, config.database),
-            (Some(user), None) => format!("redis://{user}@{}:{}/{}", config.hostname, config.port, config.database),
-            (None, None) => format!("redis://{}:{}/{}", config.hostname, config.port, config.database),
+            (Some(user), Some(pass)) => format!(
+                "redis://{user}:{pass}@{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
+            (None, Some(pass)) => format!(
+                "redis://:{pass}@{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
+            (Some(user), None) => format!(
+                "redis://{user}@{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
+            (None, None) => format!(
+                "redis://{}:{}/{}",
+                config.hostname, config.port, config.database
+            ),
         };
 
         let connection_info = FalkorConnectionInfo::try_from(connection_string)

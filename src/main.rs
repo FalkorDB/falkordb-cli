@@ -24,12 +24,7 @@ fn main() -> Result<()> {
         auth: cli.auth.as_deref(),
     };
 
-    let mut falkor_cli = FalkorCli::new(
-        &config,
-        cli.format,
-        cli.quiet,
-        cli.raw,
-    )?;
+    let mut falkor_cli = FalkorCli::new(&config, cli.format, cli.quiet, cli.raw)?;
 
     if let Some(graph) = cli.graph {
         falkor_cli.set_graph(graph);

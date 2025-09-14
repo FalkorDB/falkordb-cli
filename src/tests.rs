@@ -118,30 +118,25 @@ fn test_eval_mode() {
 #[test]
 fn test_authentication_parsing() {
     // Test username only
-    let cli = Cli::try_parse_from([
-        "falkordb-cli",
-        "-u", "testuser",
-        "interactive"
-    ]).unwrap();
+    let cli = Cli::try_parse_from(["falkordb-cli", "-u", "testuser", "interactive"]).unwrap();
     assert_eq!(cli.username, Some("testuser".to_string()));
     assert_eq!(cli.auth, None);
 
     // Test password only
-    let cli = Cli::try_parse_from([
-        "falkordb-cli", 
-        "-a", "testpass",
-        "interactive"
-    ]).unwrap();
+    let cli = Cli::try_parse_from(["falkordb-cli", "-a", "testpass", "interactive"]).unwrap();
     assert_eq!(cli.username, None);
     assert_eq!(cli.auth, Some("testpass".to_string()));
 
     // Test username and password
     let cli = Cli::try_parse_from([
         "falkordb-cli",
-        "-u", "testuser",
-        "-a", "testpass", 
-        "interactive"
-    ]).unwrap();
+        "-u",
+        "testuser",
+        "-a",
+        "testpass",
+        "interactive",
+    ])
+    .unwrap();
     assert_eq!(cli.username, Some("testuser".to_string()));
     assert_eq!(cli.auth, Some("testpass".to_string()));
 }
