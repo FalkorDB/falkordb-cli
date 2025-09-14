@@ -11,16 +11,21 @@ mod interactive;
 mod tests;
 
 use cli::Cli;
-use client::FalkorCli;
+use client::{ConnectionConfig, FalkorCli};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    let config = ConnectionConfig {
+        hostname: &cli.hostname,
+        port: cli.port,
+        database: cli.database,
+        username: cli.username.as_deref(),
+        auth: cli.auth.as_deref(),
+    };
+
     let mut falkor_cli = FalkorCli::new(
-        &cli.hostname,
-        cli.port,
-        cli.database,
-        cli.auth.as_deref(),
+        &config,
         cli.format,
         cli.quiet,
         cli.raw,

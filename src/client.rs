@@ -2,6 +2,14 @@ use anyhow::{Context, Result};
 use colored::Colorize;
 use falkordb::{FalkorClientBuilder, FalkorConnectionInfo, FalkorSyncClient};
 
+pub struct ConnectionConfig<'a> {
+    pub hostname: &'a str,
+    pub port: u16,
+    pub database: u8,
+    pub username: Option<&'a str>,
+    pub auth: Option<&'a str>,
+}
+
 pub struct FalkorCli {
     pub client: FalkorSyncClient,
     pub current_graph: Option<String>,
@@ -12,18 +20,17 @@ pub struct FalkorCli {
 
 impl FalkorCli {
     pub fn new(
-        hostname: &str,
-        port: u16,
-        database: u8,
-        auth: Option<&str>,
+        config: &ConnectionConfig<'_>,
         format: String,
         quiet: bool,
         raw: bool,
     ) -> Result<Self> {
-        let connection_string = auth.map_or_else(
-            || format!("redis://{hostname}:{port}/{database}"),
-            |password| format!("redis://{password}@{hostname}:{port}/{database}"),
-        );
+        let connection_string = match (config.username, config.auth) {
+            (Some(user), Some(pass)) => format!("redis://{user}:{pass}@{}:{}/{}", config.hostname, config.port, config.database),
+            (None, Some(pass)) => format!("redis://:{pass}@{}:{}/{}", config.hostname, config.port, config.database),
+            (Some(user), None) => format!("redis://{user}@{}:{}/{}", config.hostname, config.port, config.database),
+            (None, None) => format!("redis://{}:{}/{}", config.hostname, config.port, config.database),
+        };
 
         let connection_info = FalkorConnectionInfo::try_from(connection_string)
             .context("Failed to create connection info")?;

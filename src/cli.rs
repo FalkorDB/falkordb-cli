@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
     name = "falkordb-cli",
     version = "0.1.0",
     about = "A command-line interface for FalkorDB",
-    long_about = "A Redis-cli like interface for FalkorDB graph database operations"
+    long_about = "A Redis-cli like interface for FalkorDB graph database operations.\n\nAuthentication:\n  Use -u for username and -a for password.\n  Supports: no auth, password only, or username:password combinations."
 )]
 pub struct Cli {
     /// `FalkorDB` server hostname
@@ -20,6 +20,10 @@ pub struct Cli {
     /// Database number
     #[arg(short = 'n', long, default_value = "0")]
     pub database: u8,
+
+    /// Username for authentication
+    #[arg(short = 'u', long)]
+    pub username: Option<String>,
 
     /// Connection password
     #[arg(short = 'a', long)]
