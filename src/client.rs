@@ -158,9 +158,7 @@ impl FalkorCli {
         Ok(())
     }
 
-    fn display_as_json(
-        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
-    ) -> Result<()> {
+    fn display_as_json(result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
         println!(
             "{}",
             serde_json::to_string_pretty(&serde_json::json!({
@@ -180,9 +178,7 @@ impl FalkorCli {
     }
 
     #[allow(clippy::unnecessary_wraps)]
-    fn display_as_csv(
-        result: &falkordb::QueryResult<falkordb::LazyResultSet>,
-    ) -> Result<()> {
+    fn display_as_csv(result: &falkordb::QueryResult<falkordb::LazyResultSet>) -> Result<()> {
         let headers = &result.header;
         if !headers.is_empty() {
             // Print headers

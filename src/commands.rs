@@ -156,9 +156,7 @@ impl FalkorCli {
                 println!("Procedure calls not fully implemented yet");
                 println!("Procedure: {procedure}");
                 println!("Graph: {graph}");
-                println!(
-                    "Use: graph.call_procedure(\"{procedure}\").execute() in the Rust API"
-                );
+                println!("Use: graph.call_procedure(\"{procedure}\").execute() in the Rust API");
                 Ok(())
             }
             Commands::Interactive => self.interactive_mode(),

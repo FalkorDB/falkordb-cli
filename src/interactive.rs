@@ -39,7 +39,7 @@ impl FalkorCli {
         loop {
             let prompt = self.current_graph.as_ref().map_or_else(
                 || "falkordb> ".to_string(),
-                |graph| format!("{}> ", graph.yellow())
+                |graph| format!("{}> ", graph.yellow()),
             );
 
             let readline = rl.readline(&prompt);
@@ -132,10 +132,12 @@ impl FalkorCli {
                 }
 
                 self.current_graph.clone().as_ref().map_or_else(
-                    || Err(anyhow::anyhow!(
-                        "No graph selected. Use 'USE <graph_name>' first or specify graph name"
-                    )),
-                    |graph_name| self.execute_query(graph_name, query_text.trim(), false)
+                    || {
+                        Err(anyhow::anyhow!(
+                            "No graph selected. Use 'USE <graph_name>' first or specify graph name"
+                        ))
+                    },
+                    |graph_name| self.execute_query(graph_name, query_text.trim(), false),
                 )
             }
             Some("RO-QUERY") => {
@@ -158,19 +160,23 @@ impl FalkorCli {
                 }
 
                 self.current_graph.clone().as_ref().map_or_else(
-                    || Err(anyhow::anyhow!(
-                        "No graph selected. Use 'USE <graph_name>' first or specify graph name"
-                    )),
-                    |graph_name| self.execute_query(graph_name, query_text.trim(), true)
+                    || {
+                        Err(anyhow::anyhow!(
+                            "No graph selected. Use 'USE <graph_name>' first or specify graph name"
+                        ))
+                    },
+                    |graph_name| self.execute_query(graph_name, query_text.trim(), true),
                 )
             }
             _ => {
                 // Treat as Cypher query if we have a current graph
                 self.current_graph.clone().as_ref().map_or_else(
-                    || Err(anyhow::anyhow!(
-                        "No graph selected. Use 'USE <graph_name>' first or specify graph name"
-                    )),
-                    |graph_name| self.execute_query(graph_name, line, false)
+                    || {
+                        Err(anyhow::anyhow!(
+                            "No graph selected. Use 'USE <graph_name>' first or specify graph name"
+                        ))
+                    },
+                    |graph_name| self.execute_query(graph_name, line, false),
                 )
             }
         }
